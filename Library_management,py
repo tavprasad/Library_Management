@@ -1,0 +1,319 @@
+from tkinter import *
+from tkinter import ttk
+import tkinter.messagebox as tmsg
+
+root = Tk()
+root.geometry("950x650")
+root.title("Library Management GUI")
+
+# ================= TITLE =================
+
+Label(
+    root,
+    text="Library Management System",
+    font=("lucida", 20, "bold")
+).pack(pady=10)
+
+
+# ================= INPUT =================
+
+f = Frame(root)
+f.pack()
+
+fields = ["Book ID", "Title", "Author", "Year"]
+
+vars = []
+
+for i, field in enumerate(fields):
+
+    Label(
+        f,
+        text=field,
+        font=("Arial", 14)
+    ).grid(
+        row=i,
+        column=0,
+        padx=10,
+        pady=8
+    )
+
+    var = StringVar()
+
+    Entry(
+        f,
+        textvariable=var,
+        width=30
+    ).grid(
+        row=i,
+        column=1
+    )
+
+    vars.append(var)
+
+Bookvalue, Titlevalue, Authorvalue, Yearvalue = vars
+
+
+# ================= TABLE =================
+
+style = ttk.Style()
+
+style.configure(
+    "Treeview.Heading",
+    font=("Arial", 16, "bold")
+)
+
+table = ttk.Treeview(
+    root,
+    columns=("ID", "TITLE", "AUTHOR", "YEAR"),
+    show="headings",
+    height=12
+)
+
+columns = [
+    ("ID", "Book ID", 180),
+    ("TITLE", "Title", 280),
+    ("AUTHOR", "Author", 220),
+    ("YEAR", "Year", 120)
+]
+
+for col, text, width in columns:
+
+    table.heading(col, text=text)
+
+    table.column(
+        col,
+        width=width,
+        anchor=CENTER
+    )
+
+table.pack(pady=15)
+
+
+# ================= FUNCTIONS =================
+
+def clear():
+
+    for v in vars:
+        v.set("")
+
+
+def save():
+
+    with open(
+        "books.txt",
+        "w",
+        encoding="utf-8"
+    ) as file:
+
+        for row in table.get_children():
+
+            values = table.item(row)["values"]
+
+            # FIX
+            values = list(map(str, values))
+
+            file.write(
+                ",".join(values)
+                + "\n"
+            )
+
+
+def load():
+
+    try:
+
+        with open(
+            "books.txt",
+            "r",
+            encoding="utf-8"
+        ) as file:
+
+            for line in file:
+
+                values = [
+                    x.strip()
+                    for x in line.split(",")
+                ]
+
+                if len(values) == 4:
+
+                    table.insert(
+                        "",
+                        END,
+                        values=values
+                    )
+
+    except:
+        pass
+
+
+def add():
+
+    data = (
+        Bookvalue.get().strip(),
+        Titlevalue.get().strip(),
+        Authorvalue.get().strip(),
+        Yearvalue.get().strip()
+    )
+
+    if "" in data:
+
+        tmsg.showinfo(
+            "Error",
+            "Fill all fields"
+        )
+
+        return
+
+    for row in table.get_children():
+
+        vals = table.item(row)["values"]
+
+        if str(vals[0]) == data[0]:
+
+            tmsg.showinfo(
+                "Error",
+                "Book ID exists"
+            )
+
+            return
+
+    table.insert(
+        "",
+        END,
+        values=data
+    )
+
+    save()
+
+    clear()
+
+
+def update():
+
+    bid = Bookvalue.get().strip()
+
+    for row in table.get_children():
+
+        vals = list(
+            table.item(row)["values"]
+        )
+
+        if str(vals[0]) == bid:
+
+            if Titlevalue.get():
+                vals[1] = Titlevalue.get()
+
+            if Authorvalue.get():
+                vals[2] = Authorvalue.get()
+
+            if Yearvalue.get():
+                vals[3] = Yearvalue.get()
+
+            table.item(
+                row,
+                values=vals
+            )
+
+            save()
+
+            clear()
+
+            tmsg.showinfo(
+                "Updated",
+                "Book updated"
+            )
+
+            return
+
+    tmsg.showinfo(
+        "Error",
+        "Book not found"
+    )
+
+
+def delete():
+
+    bid = Bookvalue.get().strip()
+
+    for row in table.get_children():
+
+        vals = table.item(
+            row
+        )["values"]
+
+        if str(vals[0]) == bid:
+
+            table.delete(row)
+
+            save()
+
+            clear()
+
+            tmsg.showinfo(
+                "Deleted",
+                "Book deleted"
+            )
+
+            return
+
+    tmsg.showinfo(
+        "Error",
+        "Book not found"
+    )
+
+
+def search():
+
+    bid = Bookvalue.get().strip()
+
+    for row in table.get_children():
+
+        vals = table.item(
+            row
+        )["values"]
+
+        if str(vals[0]) == bid:
+
+            table.selection_set(row)
+
+            return
+
+    tmsg.showinfo(
+        "Not Found",
+        "Book not found"
+    )
+
+
+def exitt():
+    root.destroy()
+
+
+# ================= BUTTONS =================
+
+buttons = [
+    ("Add", add),
+    ("Update", update),
+    ("Delete", delete),
+    ("Search", search),
+    ("Exit", exitt)
+]
+
+for i, (txt, cmd) in enumerate(buttons):
+
+    Button(
+        f,
+        text=txt,
+        width=12,
+        command=cmd
+    ).grid(
+        row=5,
+        column=i,
+        padx=5,
+        pady=10
+    )
+
+
+load()
+
+root.mainloop()
